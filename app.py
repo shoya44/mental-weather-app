@@ -13,7 +13,11 @@ from linebot.v3.messaging import (
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
 load_dotenv()
-app = Flask(__name__)
+app = Flask(__name__) # ←この行のすぐ下に追加する
+
+@app.route("/", methods=['GET'])
+def hello():
+    return "Vercelサーバーは正常に動いています！"
 
 configuration = Configuration(access_token=os.environ['LINE_CHANNEL_ACCESS_TOKEN'])
 handler = WebhookHandler(os.environ['LINE_CHANNEL_SECRET'])
