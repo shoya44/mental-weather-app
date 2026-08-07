@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
-    Configuration, ApiClient, MessagingApi, ReplyMessageRequest, 
+    Configuration, ApiClient, MessagingApi, ReplyMessageRequest, PushMessageRequest,
     TextMessage, QuickReply, QuickReplyItem, MessageAction
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
@@ -30,6 +30,37 @@ def get_mental_weather_label(pred_val):
         return f"小雨☔ ({pred_val}Pt)"
     else:
         return f"大雨⛈️ ({pred_val}Pt)"
+
+LINE_USER_ID = os.environ.get('LINE_USER_ID')
+CRON_SECRET = os.environ.get('CRON_SECRET')
+
+@app.route("/notify", methods=['GET', 'POST'])
+def notify():
+    secret = request.args.get('secret')
+    if secret != CRON_SECRET:
+        return "Unauthorized", 401
+    
+    if not LINE_USER_ID:
+        return "LINE_USER_ID is not set", 500
+
+    try:
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            items = [QuickReplyItem(action=MessageAction(label=str(i), text=f"調子:{i}")) for i in range(10)]
+            msg = TextMessage(
+                text="【夕刊の時間です】\n今日の調子は？(0~9)",
+                quick_reply=QuickReply(items=items)
+            )
+            line_bot_api.push_message(
+                PushMessageRequest(
+                    to=LINE_USER_ID,
+                    messages=[msg]
+                )
+            )
+        return "Notification sent!", 200
+    except Exception as e:
+        print(f"Push Notification Error: {e}")
+        return "Failed to send notification", 500
 
 @app.route("/", methods=['GET'])
 def hello():
