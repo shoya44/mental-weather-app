@@ -1,0 +1,15 @@
+name: Daily Evening Notification
+
+on:
+  schedule:
+    # UTC 09:00 = 日本時間(JST) 18:00
+    - cron: '0 9 * * *'
+  workflow_dispatch: # GitHubの画面から手動実行できるボタン
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Notification Request
+        run: |
+          curl -s "${{ secrets.VERCEL_URL }}/notify?secret=${{ secrets.CRON_SECRET }}"
