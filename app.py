@@ -166,7 +166,6 @@ def handle_message(event):
         except Exception as e:
             print(f"Error handling message: {e}")
             msg = TextMessage(text=f"処理中にエラーが発生しました。\n詳細: {e}")
-            # エラー時はPushメッセージで確実に届ける
             line_bot_api.push_message(
                 PushMessageRequest(
                     to=event.source.user_id,
@@ -175,7 +174,6 @@ def handle_message(event):
             )
             return 'OK'
             
-        # レポート以外の場合は通常返信（ここではレポート以外の処理が正常完了した時のみ実行）
         if user_text != "レポート":
             line_bot_api.reply_message_with_http_info(
                 ReplyMessageRequest(
@@ -186,4 +184,3 @@ def handle_message(event):
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
-True)
