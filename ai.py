@@ -7,7 +7,9 @@ def generate_weekly_advice(records):
         return "直近の記録データが不足しているため、振り返りを生成できませんでした。"
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    # 【ここを修正】提供終了した 1.5 から最新の 2.5 モデルへ変更
+    model = genai.GenerativeModel('gemini-2.5-flash')
 
     # AIに渡すデータのテキスト化
     data_summary = ""
