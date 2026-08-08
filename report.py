@@ -29,7 +29,7 @@ def generate_and_upload_reports():
     df.set_index('date', inplace=True)
     df = df.tail(7)
     
-    # 【修正箇所】グラフを描画する前に、日付を「8/7」のような形式に変換しておく
+    # グラフを描画する前に、日付を「8/7」のような形式に変換しておく
     df.index = df.index.strftime('%m/%d')
 
     # ----- ① グラフ画像の作成 -----
