@@ -37,4 +37,4 @@ def generate_weekly_advice(records):
         return response.text.strip()
     except Exception as e:
         print(f"Gemini API Error: {e}")
-        return "申し訳ありません。AIアドバイスの生成中にエラーが発生しました。"
+        return f"申し訳ありません。AIアドバイスの生成中にエラーが発生しました。\n詳細: {e}"
