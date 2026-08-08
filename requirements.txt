@@ -3,3 +3,6 @@ line-bot-sdk>=3.0.0
 supabase>=2.3.0
 requests>=2.31.0
 python-dotenv>=1.0.0
+pandas>=2.0.0
+matplotlib>=3.7.0
+japanize-matplotlib>=1.1.3
