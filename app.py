@@ -12,7 +12,6 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
 from weather import get_weather_and_calc_adj
 from db import save_and_predict
-# ▼ 追加: レポート作成機能のインポート
 from report import generate_and_upload_reports
 
 load_dotenv()
@@ -131,7 +130,7 @@ def handle_message(event):
                 )
                 msg = TextMessage(text=reply_text)
                 
-            # ④ ▼ 追加: レポート機能
+            # ④ レポート機能
             elif user_text == "レポート":
                 line_bot_api.reply_message_with_http_info(
                     ReplyMessageRequest(
@@ -139,13 +138,10 @@ def handle_message(event):
                         messages=[TextMessage(text="レポートを作成中です...少しお待ちください⏳")]
                     )
                 )
-                # ここで非同期に返すのが理想ですが、今回は簡易的に同期処理とします
-                # ※処理が30秒を超えるとLINEからエラー扱いになる場合があります
                 
                 graph_url, table_url = generate_and_upload_reports()
                 
                 if graph_url and table_url:
-                    # ユーザーに直接Pushメッセージで画像を送る
                     line_bot_api.push_message(
                         PushMessageRequest(
                             to=event.source.user_id,
@@ -171,7 +167,6 @@ def handle_message(event):
             print(f"Error handling message: {e}")
             msg = TextMessage(text="申し訳ありません。処理中にエラーが発生しました。時間をおいて再度お試しください。")
             
-        # レポート以外の場合は通常返信
         if user_text != "レポート":
             line_bot_api.reply_message_with_http_info(
                 ReplyMessageRequest(
