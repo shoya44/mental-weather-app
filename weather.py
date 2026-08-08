@@ -7,7 +7,7 @@ JST = timezone(timedelta(hours=9))
 
 def get_weather_and_calc_adj(melan_val):
     api_key = os.environ.get('OPENWEATHER_API_KEY')
-    lat, lon = 35.6895, 139.6917  # 東京の座標
+    lat, lon = 35.7625, 139.8080
     url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units=metric"
     
     # タイムアウトを10秒に設定して接続待ちで止まるのを防ぐ
