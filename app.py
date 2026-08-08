@@ -6,18 +6,23 @@ from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
     Configuration, ApiClient, MessagingApi, ReplyMessageRequest, PushMessageRequest,
-    TextMessage, QuickReply, QuickReplyItem, MessageAction
+    TextMessage, QuickReply, QuickReplyItem, MessageAction, ImageMessage
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
 from weather import get_weather_and_calc_adj
 from db import save_and_predict
+# ▼ 追加: レポート作成機能のインポート
+from report import generate_and_upload_reports
 
 load_dotenv()
 app = Flask(__name__)
 
 configuration = Configuration(access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 handler = WebhookHandler(os.environ.get('LINE_CHANNEL_SECRET'))
+
+LINE_USER_ID = os.environ.get('LINE_USER_ID')
+CRON_SECRET = os.environ.get('CRON_SECRET')
 
 def get_mental_weather_label(pred_val):
     if pred_val >= 8:
@@ -31,8 +36,9 @@ def get_mental_weather_label(pred_val):
     else:
         return f"大雨⛈️ ({pred_val}Pt)"
 
-LINE_USER_ID = os.environ.get('LINE_USER_ID')
-CRON_SECRET = os.environ.get('CRON_SECRET')
+@app.route("/", methods=['GET'])
+def hello():
+    return "Vercelサーバーは正常に動いています！"
 
 @app.route("/notify", methods=['GET', 'POST'])
 def notify():
@@ -61,10 +67,6 @@ def notify():
     except Exception as e:
         print(f"Push Notification Error: {e}")
         return "Failed to send notification", 500
-
-@app.route("/", methods=['GET'])
-def hello():
-    return "Vercelサーバーは正常に動いています！"
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -104,7 +106,6 @@ def handle_message(event):
             elif user_text.startswith("記録:"):
                 _, cond_val, melan_val = user_text.split(":")
                 
-                # 天気取得・計算・DB保存
                 env_data = get_weather_and_calc_adj(melan_val)
                 pred_val, match_count = save_and_predict(cond_val, melan_val, env_data)
                 
@@ -130,19 +131,54 @@ def handle_message(event):
                 )
                 msg = TextMessage(text=reply_text)
                 
+            # ④ ▼ 追加: レポート機能
+            elif user_text == "レポート":
+                line_bot_api.reply_message_with_http_info(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text="レポートを作成中です...少しお待ちください⏳")]
+                    )
+                )
+                # ここで非同期に返すのが理想ですが、今回は簡易的に同期処理とします
+                # ※処理が30秒を超えるとLINEからエラー扱いになる場合があります
+                
+                graph_url, table_url = generate_and_upload_reports()
+                
+                if graph_url and table_url:
+                    # ユーザーに直接Pushメッセージで画像を送る
+                    line_bot_api.push_message(
+                        PushMessageRequest(
+                            to=event.source.user_id,
+                            messages=[
+                                ImageMessage(original_content_url=graph_url, preview_image_url=graph_url),
+                                ImageMessage(original_content_url=table_url, preview_image_url=table_url)
+                            ]
+                        )
+                    )
+                else:
+                    line_bot_api.push_message(
+                        PushMessageRequest(
+                            to=event.source.user_id,
+                            messages=[TextMessage(text="データがありません。何度か記録をつけてからお試しください！")]
+                        )
+                    )
+                return 'OK'
+
             else:
-                msg = TextMessage(text="「夕刊」と送ると記録が始まります。")
+                msg = TextMessage(text="画面下のメニューから選んでください👇")
 
         except Exception as e:
             print(f"Error handling message: {e}")
-            msg = TextMessage(text="申し訳ありません。気象データの取得または計算中にエラーが発生しました。時間をおいて再度お試しください。")
+            msg = TextMessage(text="申し訳ありません。処理中にエラーが発生しました。時間をおいて再度お試しください。")
             
-        line_bot_api.reply_message_with_http_info(
-            ReplyMessageRequest(
-                reply_token=event.reply_token,
-                messages=[msg]
+        # レポート以外の場合は通常返信
+        if user_text != "レポート":
+            line_bot_api.reply_message_with_http_info(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[msg]
+                )
             )
-        )
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
